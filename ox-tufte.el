@@ -56,6 +56,35 @@
 
 ;;; Define Back-End
 
+(defun remove-content-divs (html)
+  "The divs wrapping headlines and text content interfere with Tufte CSS"
+  (replace-regexp-in-string 
+   (rx (= 2 "</div>" (* (or space ?\n))) "</section>")
+   "</section>" 
+   (replace-regexp-in-string 
+    (rx "<div" (* (not (any ?>))) ?> (* (or space ?\n))
+        (group "<h2" (*? anything) "</h2>") (* (or space ?\n))
+        "<div" (* (not (any ?>))) ?>) 
+    (lambda (txt) 
+      (substring txt (match-beginning 1) (match-end 1)))
+    html)))
+
+(defun wrap-section (html)
+  "Wrap sections (identified by their <h2> element) with a <section> tag"
+  (if (string-match-p
+       (rx string-start "<div" (*? (not (any ?>))) ?> 
+           (* (or space ?\n)) "<h2") 
+       html)
+      (concat "<section>" html "</section>")
+    html))
+
+(defun wrap-article (html)
+  "Wrap the insode of the <body> of the document with an <article> tag"
+  (replace-regexp-in-string 
+   "<body>" "<body><article>" 
+   (replace-regexp-in-string "</body>" "</article></body>" html nil t)
+   nil t))
+
 (org-export-define-derived-backend 'tufte-html 'html
   :menu-entry
   '(?T "Export to Tufte-HTML"
@@ -70,7 +99,12 @@
                      (src-block . org-tufte-src-block)
                      (link . org-tufte-maybe-margin-note-link)
                      (quote-block . org-tufte-quote-block)
-                     (verse-block . org-tufte-verse-block)))
+                     (verse-block . org-tufte-verse-block))
+  :filters-alist `((:filter-headline (lambda (txt back-end info) 
+                                       (wrap-section txt)))
+                   (:filter-final-output (lambda (txt back-end info) 
+                                           (remove-content-divs 
+                                            (wrap-article txt))))))
 
 
 ;;; Transcode Functions
