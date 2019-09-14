@@ -276,7 +276,10 @@ Return output file name."
                       (concat "." (or (plist-get plist :html-extension)
                                       org-html-extension
                                       "html"))
-                      plist pub-dir))
+                      (if org-tufte-include-footnotes-at-bottom
+                          plist
+                        (plist-put plist :html-footnotes-section "<!-- %s --><!-- %s -->"))
+                      pub-dir))
 
 (provide 'ox-tufte)
 
