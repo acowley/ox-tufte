@@ -56,6 +56,15 @@
 
 ;;; Define Back-End
 
+(defun remove-img-paragraphs (html)
+  (replace-regexp-in-string
+   (rx "<p>" (* (or space ?\n))
+       (group "<img" (* (not (any ?>)))) (* (or space ?\n))
+       "</p>")
+   (lambda (txt)
+     (substring txt (match-beginning 1) (match-end 1)))
+   html))
+
 (defun remove-content-divs (html)
   "The divs wrapping headlines and text content interfere with Tufte CSS"
   (replace-regexp-in-string 
@@ -103,8 +112,9 @@
   :filters-alist `((:filter-headline (lambda (txt back-end info) 
                                        (wrap-section txt)))
                    (:filter-final-output (lambda (txt back-end info) 
-                                           (remove-content-divs 
-                                            (wrap-article txt))))))
+                                           (remove-img-paragraphs
+                                            (remove-content-divs 
+                                             (wrap-article txt)))))))
 
 
 ;;; Transcode Functions
